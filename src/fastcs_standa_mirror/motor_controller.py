@@ -10,9 +10,9 @@ from fastcs_standa_mirror.io.motor_attribute import (
 
 
 class MotorController(Controller):
-    position = AttrR(Float(), io_ref=MotorAttributeIORef("position"))
-    home = AttrR(Float(), io_ref=MotorAttributeIORef("home"))
-    moving = AttrR(Bool(), io_ref=MotorAttributeIORef("status"))
+    current = AttrR(Float(), io_ref=MotorAttributeIORef("current"), group="Position")
+    home = AttrR(Float(), io_ref=MotorAttributeIORef("home"), group="Position")
+    moving = AttrR(Bool(), io_ref=MotorAttributeIORef("moving"), group="Status")
 
     def __init__(self, name: str, device_uri: str):
         self.name = name
@@ -44,6 +44,6 @@ class MotorController(Controller):
         """Get home position"""
         return self.home_position
 
-    def set_home_position(self, new_position) -> None:
+    def set_home_position(self, new_home_position) -> None:
         """Set a new home position"""
-        self.home_position = new_position
+        self.home_position = new_home_position

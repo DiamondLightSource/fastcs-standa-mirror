@@ -14,8 +14,8 @@ from fastcs_standa_mirror.utils import load_home_pos, save_home_pos
 class MirrorController(Controller):
     """Controller for two axis mirror"""
 
-    speed = AttrRW(Float(), io_ref=MirrorAttributeIORef("speed"))
-    jog_step = AttrRW(Float(), io_ref=MirrorAttributeIORef("jog_step"))
+    speed = AttrRW(Float(), io_ref=MirrorAttributeIORef("speed"), group="Global")
+    jog_step = AttrRW(Float(), io_ref=MirrorAttributeIORef("jog_step"), group="Global")
 
     def __init__(self, pitch_uri: str, yaw_uri: str):
         super().__init__(ios=[MirrorAttributeIO(self)])
@@ -35,14 +35,14 @@ class MirrorController(Controller):
 
         self.jog_step_size = 100.0
 
-    @command()
-    async def home(self) -> None:
+    @command(group="Home")
+    async def rehome(self) -> None:
         """Return to home"""
         print("Returning to home position")
         await self.pitch.move_home()
         await self.yaw.move_home()
 
-    @command()
+    @command(group="Home")
     async def save(self) -> None:
         """Save home location"""
         pitch = await self.pitch.get_current_position()
@@ -54,25 +54,25 @@ class MirrorController(Controller):
 
         save_home_pos({"pitch": pitch, "yaw": yaw})
 
-    @command()
+    @command(group="Jog")
     async def up(self) -> None:
         """Jog up"""
         print(f"Jogging up by {self.jog_step_size}")
         await self.pitch.move_relative(int(self.jog_step_size))
 
-    @command()
+    @command(group="Jog")
     async def left(self) -> None:
         """Jog left"""
         print(f"Jogging left by {self.jog_step_size}")
         await self.yaw.move_relative(int(self.jog_step_size))
 
-    @command()
+    @command(group="Jog")
     async def down(self) -> None:
         """Jog down"""
         print(f"Jogging down by {self.jog_step_size}")
         await self.pitch.move_relative(-int(self.jog_step_size))
 
-    @command()
+    @command(group="Jog")
     async def right(self) -> None:
         """Jog right"""
         print(f"Jogging right by {self.jog_step_size}")
