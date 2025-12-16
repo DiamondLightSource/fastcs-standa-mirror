@@ -3,31 +3,38 @@ from fastcs.controllers import Controller
 from fastcs.datatypes import Float
 from fastcs.methods import command
 
-from fastcs_standa_mirror.io.mirror_attribute import MirrorAttributeIO, MirrorAttributeIORef
+from fastcs_standa_mirror.io.mirror_attribute import (
+    MirrorAttributeIO,
+    MirrorAttributeIORef,
+)
 from fastcs_standa_mirror.motor_controller import MotorController
 from fastcs_standa_mirror.utils import load_home_pos, save_home_pos
 
 
 class MirrorController(Controller):
     """Controller for two axis mirror"""
+
     speed = AttrRW(Float(), io_ref=MirrorAttributeIORef("speed"))
     jog_step = AttrRW(Float(), io_ref=MirrorAttributeIORef("jog_step"))
-    
+
     def __init__(self, pitch_uri: str, yaw_uri: str):
         super().__init__(ios=[MirrorAttributeIO(self)])
 
         pitch = MotorController("pitch", pitch_uri)
         yaw = MotorController("yaw", yaw_uri)
 
+        self.pitch: MotorController
+        self.yaw: MotorController
+
         self.add_sub_controller("pitch", pitch)
         self.add_sub_controller("yaw", yaw)
 
         home_positions = load_home_pos()
-        self.pitch.set_home_position(home_positions.get('pitch', 0))
-        self.yaw.set_home_position(home_positions.get('yaw', 0))
+        self.pitch.set_home_position(home_positions.get("pitch", 0))
+        self.yaw.set_home_position(home_positions.get("yaw", 0))
 
         self.jog_step_size = 100.0
-    
+
     @command()
     async def home(self) -> None:
         """Return to home"""
@@ -35,10 +42,9 @@ class MirrorController(Controller):
         await self.pitch.move_home()
         await self.yaw.move_home()
 
-
     @command()
     async def save(self) -> None:
-        """ Save home location"""
+        """Save home location"""
         pitch = await self.pitch.get_current_position()
         yaw = await self.yaw.get_current_position()
 
@@ -46,7 +52,7 @@ class MirrorController(Controller):
         self.pitch.set_home_position(pitch)
         self.yaw.set_home_position(yaw)
 
-        save_home_pos({'pitch': pitch, 'yaw': yaw})
+        save_home_pos({"pitch": pitch, "yaw": yaw})
 
     @command()
     async def up(self) -> None:
@@ -56,18 +62,18 @@ class MirrorController(Controller):
 
     @command()
     async def left(self) -> None:
-        """ Jog left """
+        """Jog left"""
         print(f"Jogging left by {self.jog_step_size}")
         await self.yaw.move_relative(int(self.jog_step_size))
 
     @command()
     async def down(self) -> None:
-        """ Jog down """
+        """Jog down"""
         print(f"Jogging down by {self.jog_step_size}")
         await self.pitch.move_relative(-int(self.jog_step_size))
 
     @command()
     async def right(self) -> None:
-        """ Jog right """
+        """Jog right"""
         print(f"Jogging right by {self.jog_step_size}")
         await self.yaw.move_relative(-int(self.jog_step_size))
