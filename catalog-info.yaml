@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: fastcs-standa-mirror
+  title: fastcs-standa-mirror
+  description: FastCS support for two axis alignment mirror with 8SMC5 Standa Motor Controllers
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:default/<beamine-controls>

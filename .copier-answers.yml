@@ -1,0 +1,21 @@
+# Changes here will be overwritten by Copier
+_commit: 5.0.1
+_src_path: https://github.com/DiamondLightSource/python-copier-template.git
+author_email: thomas.kane@diamond.ac.uk
+author_name: Tom Kane
+component_lifecycle: experimental
+component_owner: group:default/<beamine-controls>
+component_type: service
+description: FastCS support for two axis alignment mirror with 8SMC5 Standa Motor
+    Controllers
+distribution_name: fastcs-standa-mirror
+docker: true
+docker_debug: true
+docs_type: README
+git_platform: github.com
+github_org: DiamondLightSource
+package_name: fastcs_standa_mirror
+pypi: false
+repo_name: fastcs-standa-mirror
+strict_typing: false
+type_checker: pyright
