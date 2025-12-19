@@ -34,6 +34,12 @@ class MirrorController(Controller):
 
         self.jog_step_size = 100.0
 
+    @command()
+    async def stop_moving(self) -> None:
+        """Stop all motors"""
+        await self.pitch.stop_moving()
+        await self.yaw.stop_moving()
+
     @command(group="Home")
     async def rehome(self) -> None:
         """Return to home"""
