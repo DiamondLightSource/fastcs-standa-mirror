@@ -8,7 +8,7 @@ from fastcs_standa_mirror.io.mirror_attribute import (
     MirrorAttributeIORef,
 )
 from fastcs_standa_mirror.motor_controller import MotorController
-from fastcs_standa_mirror.utils import load_home_pos, save_home_pos
+from fastcs_standa_mirror.utils import save_home_pos
 
 
 class MirrorController(Controller):
@@ -17,7 +17,7 @@ class MirrorController(Controller):
     speed = AttrRW(Float(), io_ref=MirrorAttributeIORef("speed"), group="Global")
     jog_step = AttrRW(Float(), io_ref=MirrorAttributeIORef("jog_step"), group="Global")
 
-    def __init__(self, pitch_uri: str, yaw_uri: str):
+    def __init__(self, pitch_uri: str, yaw_uri: str, home_positions: dict):
         super().__init__(ios=[MirrorAttributeIO(self)])
 
         pitch = MotorController("pitch", pitch_uri)
@@ -29,7 +29,6 @@ class MirrorController(Controller):
         self.add_sub_controller("pitch", pitch)
         self.add_sub_controller("yaw", yaw)
 
-        home_positions = load_home_pos()
         self.pitch.set_home_position(home_positions.get("pitch", 0))
         self.yaw.set_home_position(home_positions.get("yaw", 0))
 

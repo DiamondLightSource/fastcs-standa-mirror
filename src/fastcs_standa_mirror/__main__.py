@@ -1,14 +1,19 @@
 """Interface for ``python -m fastcs_standa_mirror``."""
 
+import os
 from argparse import ArgumentParser
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastcs.launch import FastCS
 from fastcs.transports.epics import EpicsGUIOptions, EpicsIOCOptions
 from fastcs.transports.epics.ca.transport import EpicsCATransport
 
 from fastcs_standa_mirror.mirror_controller import MirrorController
-from fastcs_standa_mirror.utils import create_virtual_device_uris
+from fastcs_standa_mirror.utils import (
+    load_devices,
+    load_or_create_home_pos,
+)
 
 from . import __version__
 
@@ -34,8 +39,14 @@ def main() -> None:
     parsed_args = parser.parse_args()
     use_virtual = parsed_args.use_virtual
 
-    pv_prefix = "VISR-Standa:"
+    # initial varaiables setup
+    load_dotenv()
 
+    pv_prefix = os.getenv("PV_PREFIX", "STANDA-MIRROR")
+    home_positions = load_or_create_home_pos()
+    uris = load_devices(use_virtual=use_virtual)
+
+    # epics setupo
     gui_options = EpicsGUIOptions(
         output_path=Path(".") / "gui/Mirror.bob", title="Mirror Controller"
     )
@@ -44,26 +55,11 @@ def main() -> None:
         gui=gui_options, epicsca=EpicsIOCOptions(pv_prefix=pv_prefix)
     )
 
-    if use_virtual:
-        print("No physical device, creating virtual devices")
+    # run fastcs instance
+    controller = MirrorController(uris["pitch"], uris["yaw"], home_positions)
+    fastcs = FastCS(controller, [epics_ca])
 
-        uris = create_virtual_device_uris()
-        controller = MirrorController(uris[0], uris[1])
-
-        fastcs = FastCS(controller, [epics_ca])
-
-        fastcs.run()
-
-    # else:
-
-    #     devices = ximc.enumerate_devices(
-    #       ximc.EnumerateFlags.ENUMERATE_NETWORK | ximc.EnumerateFlags.ENUMERATE_PROBE
-    #     )
-
-    #     print("Found {} real device(s):".format(len(devices)))
-
-    #     for device in devices:
-    #         print("  {}".format(device))
+    fastcs.run()
 
 
 if __name__ == "__main__":

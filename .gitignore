@@ -70,4 +70,6 @@ lockfiles/
 # ruff cache
 .ruff_cache/
 
+.env
 gui/
+virt/

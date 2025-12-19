@@ -1,29 +1,95 @@
 import os
 from pathlib import Path
 
+import libximc.highlevel as ximc
 import yaml
 
 
-def create_virtual_device_uris() -> list[str]:
-    virtual_device_filename = "virtual_motor_controller"
-    virtual_device_file_path = os.path.join(
-        Path().cwd(), "virt", virtual_device_filename
-    )
-    device_uri_base = f"xi-emu:///{virtual_device_file_path}"
+class DeviceNotFoundError(Exception):
+    """Raised when expected device uris are not found"""
 
-    return [
-        "_".join([device_uri_base, "pitch.bin"]),
-        "_".join([device_uri_base, "yaw.bin"]),
-    ]
+    pass
 
 
-def load_home_pos() -> dict:
-    with open("home.yaml") as file:
+def load_devices(use_virtual: bool) -> dict:
+    """Load device uris for pitch and yaw controllers"""
+
+    return create_virtual_devices() if use_virtual else load_real_devices()
+
+
+def load_real_devices() -> dict:
+    """Discover and validate real device uris against config"""
+
+    target_uris = {
+        "pitch": os.getenv("DEVICE_PITCH_URI"),
+        "yaw": os.getenv("DEVICE_YAW_URI"),
+    }
+
+    print("Target uris:")
+    for v in target_uris.values():
+        print(v)
+    print("---------")
+
+    devices = ximc.enumerate_devices(ximc.EnumerateFlags.ENUMERATE_ALL_COM)
+    real_uris = [device["uri"] for device in devices]
+
+    print("Real device uris:")
+    for uri in real_uris:
+        print(f"  {uri}")
+    print("---------")
+
+    missing_devices = []
+
+    for name, uri in target_uris.items():
+        if uri in real_uris:
+            print(f"Found {name} controller")
+        else:
+            missing_devices.append(name)
+
+    if missing_devices:
+        raise DeviceNotFoundError(
+            f"Expected devices not found: {', '.join(missing_devices)}"
+        )
+
+    return target_uris
+
+
+def create_virtual_devices() -> dict:
+    """Create virtual devices and return uris"""
+
+    virt_dir = Path.cwd() / "virt"
+
+    device_uri_base = f"xi-emu:///{virt_dir}/virtual_motor_controller"
+
+    return {
+        "pitch": f"{device_uri_base}_pitch.bin",
+        "yaw": f"{device_uri_base}_yaw.bin",
+    }
+
+
+def load_or_create_home_pos() -> dict:
+    """Load home positions from yaml file or create if not exists"""
+
+    if Path("home.yaml").exists():
+        home_positions = load_yaml("home.yaml")
+    else:
+        home_positions = {"pitch": 0, "yaw": 0}
+        save_home_pos(home_positions)
+
+    return home_positions
+
+
+def load_yaml(filename: str) -> dict:
+    """Load data from yaml"""
+
+    with open(filename) as file:
         data = yaml.safe_load(file)
 
         return data
 
 
-def save_home_pos(data) -> None:
+def save_home_pos(data: dict) -> None:
+    """save dict data to home.yaml"""
+
     with open("home.yaml", "w") as file:
         yaml.dump(data, file, default_flow_style=False)

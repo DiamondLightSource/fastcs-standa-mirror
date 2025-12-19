@@ -17,6 +17,7 @@ dependencies = [
     "libximc>=2.14.30",
     "p4p>=4.2.1",
     "pvi>=0.11.0",
+    "python-dotenv>=1.2.1",
     "softioc>=4.6.1",
 ] # Add project dependencies here, e.g. ["click", "numpy"]
 dynamic = ["version"]
