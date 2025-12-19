@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import KW_ONLY, dataclass
 from typing import TypeVar
 
@@ -37,7 +38,7 @@ class MirrorAttributeIO(AttributeIO[float, MirrorAttributeIORef]):
         """Change mirror attribute"""
 
         if attr.io_ref.name == "speed":
-            print(f"Changing speed to {value}")
+            logging.info(f"Changing speed to {value}")
             move_settings_pitch = self._master.pitch.motor.get_move_settings()
             move_settings_yaw = self._master.yaw.motor.get_move_settings()
             move_settings_pitch.Speed = int(value)
@@ -46,5 +47,5 @@ class MirrorAttributeIO(AttributeIO[float, MirrorAttributeIORef]):
             self._master.yaw.motor.set_move_settings(move_settings_yaw)
 
         elif attr.io_ref.name == "jog_step":
-            print(f"Changing jog step size to {value}")
+            logging.info(f"Changing jog step size to {value}")
             self._master.jog_step_size = value

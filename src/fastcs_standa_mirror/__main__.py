@@ -1,5 +1,6 @@
 """Interface for ``python -m fastcs_standa_mirror``."""
 
+import logging
 import os
 from argparse import ArgumentParser
 from pathlib import Path
@@ -18,6 +19,8 @@ from fastcs_standa_mirror.utils import (
 from . import __version__
 
 __all__ = ["main"]
+
+logging.basicConfig(level=logging.INFO)
 
 
 def main() -> None:

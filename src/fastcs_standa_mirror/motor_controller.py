@@ -1,3 +1,5 @@
+import logging
+
 import libximc.highlevel as ximc
 from fastcs.attributes import AttrR
 from fastcs.controllers import Controller
@@ -13,6 +15,9 @@ from fastcs_standa_mirror.io.motor_attribute import (
 class MotorController(Controller):
     """Subcontroller for Standa motor"""
 
+    _name: str = ""
+    _device_uri: str = ""
+
     current = AttrR(Float(), io_ref=MotorAttributeIORef("current"), group="Position")
     home = AttrR(Float(), io_ref=MotorAttributeIORef("home"), group="Position")
     moving = AttrR(Bool(), io_ref=MotorAttributeIORef("moving"), group="Status")
@@ -20,16 +25,28 @@ class MotorController(Controller):
     def __init__(self, name: str, device_uri: str):
         self._name = name
         self._device_uri = device_uri
-        self.motor = ximc.Axis(self._device_uri)
-        self.motor.open_device()
+
+        try:
+            self.motor = ximc.Axis(self._device_uri)
+            self.motor.open_device()
+            logging.info(
+                f"Successfully opened device\n'{self._name}' at {self._device_uri}"
+            )
+
+        except Exception as e:
+            logging.error(
+                f"Failed to open device!\n'{self._name}' at {self._device_uri}: {e}"
+            )
+            raise
+
+        self.home_position: int = 0
 
         super().__init__(name, ios=[MotorAttributeIO(self)])
-
-        self.home_position = 0
 
     @command()
     async def stop_moving(self) -> None:
         """Stop motor"""
+        logging.info(f"Stopping {self._name} motor")
         self.motor.command_stop()
 
     async def move_absolute(self, position: int) -> None:

@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -20,29 +21,29 @@ def load_devices(use_virtual: bool) -> dict:
 def load_real_devices() -> dict:
     """Discover and validate real device uris against config"""
 
+    logging.info("Looking for real standa devices")
+
     target_uris = {
         "pitch": os.getenv("DEVICE_PITCH_URI"),
         "yaw": os.getenv("DEVICE_YAW_URI"),
     }
 
-    print("Target uris:")
+    logging.debug("Target uris:")
     for v in target_uris.values():
-        print(v)
-    print("---------")
+        logging.debug(v)
 
     devices = ximc.enumerate_devices(ximc.EnumerateFlags.ENUMERATE_ALL_COM)
     real_uris = [device["uri"] for device in devices]
 
-    print("Real device uris:")
+    logging.debug("Real device uris:")
     for uri in real_uris:
-        print(f"  {uri}")
-    print("---------")
+        logging.debug(f"  {uri}")
 
     missing_devices = []
 
     for name, uri in target_uris.items():
         if uri in real_uris:
-            print(f"Found {name} controller")
+            logging.info(f"Found {name} controller")
         else:
             missing_devices.append(name)
 
@@ -56,6 +57,7 @@ def load_real_devices() -> dict:
 
 def create_virtual_devices() -> dict:
     """Create virtual devices and return uris"""
+    logging.info("Creating virtual standa devices")
 
     virt_dir = Path.cwd() / "virt"
 
