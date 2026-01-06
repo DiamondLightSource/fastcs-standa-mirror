@@ -36,6 +36,15 @@ class MirrorController(Controller):
 
         self.jog_step_size: int = 100
 
+    async def initialise(self):
+        await self.calibrate()
+        return await super().initialise()
+
+    async def calibrate(self) -> None:
+        logging.info("Calibrating motor zero positions")
+        await self.pitch.calibrate()
+        await self.yaw.calibrate()
+
     @command()
     async def stop_moving(self) -> None:
         """Stop all motors"""

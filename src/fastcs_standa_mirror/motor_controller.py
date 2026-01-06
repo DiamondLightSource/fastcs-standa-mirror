@@ -43,6 +43,10 @@ class MotorController(Controller):
 
         super().__init__(name, ios=[MotorAttributeIO(self)])
 
+    async def calibrate(self) -> None:
+        logging.info(f"Setting {self._name} zero position")
+        self.motor.command_homezero()
+
     @command()
     async def stop_moving(self) -> None:
         """Stop motor"""
