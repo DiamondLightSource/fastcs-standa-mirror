@@ -57,7 +57,7 @@ def main() -> None:
             raise ValueError("DEVICE_PITCH_URI and DEVICE_YAW_URI must be set")
 
     else:
-        pv_prefix = f"MIRROR-SIM-{os.getpid()}"
+        pv_prefix = "MIRROR-SIM-001"
         logging.info(f"Simulated device PV_PREFIX -> {pv_prefix}")
 
     home_positions = load_or_create_home_pos()

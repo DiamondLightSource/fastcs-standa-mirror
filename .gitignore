@@ -71,6 +71,7 @@ lockfiles/
 .ruff_cache/
 
 .env
-gui/
+bob/
+bob_custom/
 virt/
 home.yaml
