@@ -33,25 +33,39 @@ def main() -> None:
         version=__version__,
     )
     parser.add_argument(
-        "--use-virtual",
+        "--sim",
         action="store_true",
-        dest="use_virtual",
-        help="Enable virtual mode",
+        dest="use_sim",
+        help="Use simulated device",
     )
 
     parsed_args = parser.parse_args()
-    use_virtual = parsed_args.use_virtual
+    use_sim = parsed_args.use_sim
 
-    # initial varaiables setup
-    load_dotenv()
+    # Validate device URIs and PV_PREFIX only if not using simulation
+    if not use_sim:
+        load_dotenv()
 
-    pv_prefix = os.getenv("PV_PREFIX", "STANDA-MIRROR")
+        pv_prefix = os.getenv("PV_PREFIX")
+        print(pv_prefix)
+        if pv_prefix is None:
+            raise ValueError("PV_PREFIX environment variable must be set")
+
+        device_pitch_uri = os.getenv("DEVICE_PITCH_URI")
+        device_yaw_uri = os.getenv("DEVICE_YAW_URI")
+        if device_pitch_uri is None or device_yaw_uri is None:
+            raise ValueError("DEVICE_PITCH_URI and DEVICE_YAW_URI must be set")
+
+    else:
+        pv_prefix = "MIRROR-SIM-001"
+        logging.info(f"Simulated device PV_PREFIX -> {pv_prefix}")
+
     home_positions = load_or_create_home_pos()
-    uris = load_devices(use_virtual=use_virtual)
+    uris = load_devices(use_sim=use_sim)
 
-    # epics setupo
+    # epics setup
     gui_options = EpicsGUIOptions(
-        output_path=Path(".") / "gui/Mirror.bob", title="Mirror Controller"
+        output_path=Path(".") / "bob/Mirror.bob", title="Mirror Controller"
     )
 
     epics_ca = EpicsCATransport(

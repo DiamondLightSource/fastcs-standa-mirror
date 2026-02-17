@@ -12,10 +12,10 @@ class DeviceNotFoundError(Exception):
     pass
 
 
-def load_devices(use_virtual: bool) -> dict:
+def load_devices(use_sim: bool) -> dict:
     """Load device uris for pitch and yaw controllers"""
 
-    return create_virtual_devices() if use_virtual else load_real_devices()
+    return create_simulated_devices() if use_sim else load_real_devices()
 
 
 def load_real_devices() -> dict:
@@ -55,13 +55,13 @@ def load_real_devices() -> dict:
     return target_uris
 
 
-def create_virtual_devices() -> dict:
-    """Create virtual devices and return uris"""
-    logging.info("Creating virtual standa devices")
+def create_simulated_devices() -> dict:
+    """Create simulated devices and return uris"""
+    logging.info("Creating simulated standa devices")
 
     virt_dir = Path.cwd() / "virt"
 
-    device_uri_base = f"xi-emu:///{virt_dir}/virtual_motor_controller"
+    device_uri_base = f"xi-emu:///{virt_dir}/simulated_motor_controller"
 
     return {
         "pitch": f"{device_uri_base}_pitch.bin",

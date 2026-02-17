@@ -30,7 +30,7 @@ class MotorController(Controller):
             self.motor = ximc.Axis(self._device_uri)
             self.motor.open_device()
             logging.info(
-                f"Successfully opened device\n'{self._name}' at {self._device_uri}"
+                f"Successfully opened device -> '{self._name}' at {self._device_uri}"
             )
 
         except Exception as e:
