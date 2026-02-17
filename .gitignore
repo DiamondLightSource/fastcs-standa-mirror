@@ -73,5 +73,4 @@ lockfiles/
 .env
 bob/
 bob_custom/
-virt/
-home.yaml
+saved.yaml

@@ -19,7 +19,7 @@ class MotorController(Controller):
     _device_uri: str = ""
 
     current = AttrR(Float(), io_ref=MotorAttributeIORef("current"), group="Position")
-    home = AttrR(Float(), io_ref=MotorAttributeIORef("home"), group="Position")
+    saved = AttrR(Float(), io_ref=MotorAttributeIORef("saved"), group="Position")
     moving = AttrR(Bool(), io_ref=MotorAttributeIORef("moving"), group="Status")
 
     def __init__(self, name: str, device_uri: str):
@@ -39,13 +39,13 @@ class MotorController(Controller):
             )
             raise
 
-        self.home_position: int = 0
+        self.saved_position: int = 0
 
         super().__init__(name, ios=[MotorAttributeIO(self)])
 
-    async def calibrate(self) -> None:
-        logging.info(f"Setting {self._name} zero position")
-        self.motor.command_homezero()
+    async def home(self) -> None:
+        logging.info(f"Homing {self._name}")
+        self.motor.command_home()
 
     @command()
     async def stop_moving(self) -> None:
@@ -61,18 +61,18 @@ class MotorController(Controller):
         """Move by relative distance"""
         self.motor.command_movr(distance, 0)
 
-    async def move_home(self) -> None:
-        """Move to home position"""
-        self.motor.command_move(self.home_position, 0)
+    async def move_to_saved(self) -> None:
+        """Move to saved position"""
+        self.motor.command_move(self.saved_position, 0)
 
     async def get_current_position(self) -> int:
         """Get current position"""
         return self.motor.get_position().Position
 
-    async def get_home_position(self) -> int:
-        """Get home position"""
-        return self.home_position
+    async def get_saved_position(self) -> int:
+        """Get saved position"""
+        return self.saved_position
 
-    def set_home_position(self, new_home_position) -> None:
-        """Set a new home position"""
-        self.home_position = new_home_position
+    def set_saved_position(self, new_saved_position) -> None:
+        """Set a new saved position"""
+        self.saved_position = new_saved_position
