@@ -74,3 +74,4 @@ lockfiles/
 bob/
 bob_custom/
 saved.yaml
+controller.yaml

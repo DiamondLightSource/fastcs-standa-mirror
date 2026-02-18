@@ -1,0 +1,10 @@
+controller:
+  uris:
+    pitch: SIM/000000
+    yaw: SIM/000001
+transport:
+  - ioc:
+      pv_prefix: PV_PREFIX
+    gui:
+      output_path: /epics/opi/output.bob
+      title: Alignment Mirror

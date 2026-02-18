@@ -1,15 +1,16 @@
 """Interface for ``python -m fastcs_standa_mirror``."""
 
 import logging
-import os
-from argparse import ArgumentParser
+from functools import cache
 from pathlib import Path
 
-from dotenv import load_dotenv
+import typer
+import yaml
 from fastcs.launch import FastCS
 from fastcs.transports.epics import EpicsGUIOptions, EpicsIOCOptions
 from fastcs.transports.epics.ca.transport import EpicsCATransport
 
+from fastcs_standa_mirror.config import Config
 from fastcs_standa_mirror.mirror_controller import MirrorController
 from fastcs_standa_mirror.utils import (
     load_devices,
@@ -22,60 +23,65 @@ __all__ = ["main"]
 
 logging.basicConfig(level=logging.INFO)
 
+app = typer.Typer()
 
-def main() -> None:
-    """Argument parser for the CLI."""
-    parser = ArgumentParser()
-    parser.add_argument(
-        "-v",
+
+def version_callback(value: bool):
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool | None = typer.Option(
+        None,
         "--version",
-        action="version",
-        version=__version__,
+        callback=version_callback,
+        is_eager=True,
+        help="Print the version and exit",
+    ),
+):
+    pass
+
+
+@cache
+def load_config(config_file: Path) -> Config:
+    config = Config(**yaml.safe_load(config_file.read_text()))
+
+    config.controller.sim = any(
+        uri.startswith("SIM")
+        for uri in [config.controller.uris.pitch, config.controller.uris.yaw]
     )
-    parser.parse_args()
 
-    # Load environment variables
-    load_dotenv()
+    return config
 
-    # Get device uris
-    device_pitch_uri = os.getenv("DEVICE_PITCH_URI")
-    device_yaw_uri = os.getenv("DEVICE_YAW_URI")
 
-    if device_pitch_uri is None or device_yaw_uri is None:
-        raise ValueError("DEVICE_PITCH_URI and DEVICE_YAW_URI must be set")
+@app.command()
+def run(config_file: Path):
+    config = load_config(config_file)
 
-    # Detect if we're using a sim
-    use_sim = device_pitch_uri.startswith("SIM") or device_yaw_uri.startswith("SIM")
-
-    # Load pv prefix
-    pv_prefix = os.getenv("PV_PREFIX")
-
-    if pv_prefix is None:
-        raise ValueError("PV_PREFIX environment variable must be set")
-
-    if use_sim:
-        logging.info(f"Using simulated devices with PV_PREFIX -> {pv_prefix}")
-    else:
-        print(pv_prefix)
+    if config.controller.sim:
+        logging.info("Using simulated devices")
+    logging.info(f"PV PREFIX = {config.transport[0].ioc.pv_prefix}")
 
     saved_positions = load_or_create_saved_pos()
-    uris = load_devices(use_sim=use_sim)
-
-    # epics setup
-    gui_options = EpicsGUIOptions(
-        output_path=Path(".") / "bob/Mirror.bob", title="Mirror Controller"
-    )
+    uris = load_devices(use_sim=config.controller.sim, uris=config.controller.uris)
 
     epics_ca = EpicsCATransport(
-        gui=gui_options, epicsca=EpicsIOCOptions(pv_prefix=pv_prefix)
+        gui=EpicsGUIOptions(
+            output_path=Path(config.transport[0].gui.output_path),
+            title=config.transport[0].gui.title,
+        ),
+        epicsca=EpicsIOCOptions(pv_prefix=config.transport[0].ioc.pv_prefix),
     )
 
     # run fastcs instance
-    controller = MirrorController(uris["pitch"], uris["yaw"], saved_positions)
+    controller = MirrorController(uris, saved_positions)
     fastcs = FastCS(controller, [epics_ca])
 
     fastcs.run()
 
 
 if __name__ == "__main__":
-    main()
+    app()
