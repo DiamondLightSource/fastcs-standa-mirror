@@ -59,9 +59,9 @@ def create_simulated_devices() -> dict:
     """Create simulated devices and return uris"""
     logging.info("Creating simulated standa devices")
 
-    virt_dir = Path.cwd() / "virt"
+    sim_dir = Path.cwd() / "sim"
 
-    device_uri_base = f"xi-emu:///{virt_dir}/simulated_motor_controller"
+    device_uri_base = f"xi-emu:///{sim_dir}/simulated_motor_controller"
 
     return {
         "pitch": f"{device_uri_base}_pitch.bin",
@@ -69,16 +69,16 @@ def create_simulated_devices() -> dict:
     }
 
 
-def load_or_create_home_pos() -> dict:
-    """Load home positions from yaml file or create if not exists"""
+def load_or_create_saved_pos() -> dict:
+    """Load saved positions from yaml file or create if not exists"""
 
-    if Path("home.yaml").exists():
-        home_positions = load_yaml("home.yaml")
+    if Path("saved.yaml").exists():
+        saved_positions = load_yaml("saved.yaml")
     else:
-        home_positions = {"pitch": 0, "yaw": 0}
-        save_home_pos(home_positions)
+        saved_positions = {"pitch": 0, "yaw": 0}
+        save_pos(saved_positions)
 
-    return home_positions
+    return saved_positions
 
 
 def load_yaml(filename: str) -> dict:
@@ -90,8 +90,8 @@ def load_yaml(filename: str) -> dict:
         return data
 
 
-def save_home_pos(data: dict) -> None:
-    """save dict data to home.yaml"""
+def save_pos(data: dict) -> None:
+    """save dict data to saved.yaml"""
 
-    with open("home.yaml", "w") as file:
+    with open("saved.yaml", "w") as file:
         yaml.dump(data, file, default_flow_style=False)

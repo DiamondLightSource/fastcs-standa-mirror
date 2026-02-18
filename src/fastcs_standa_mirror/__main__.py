@@ -13,7 +13,7 @@ from fastcs.transports.epics.ca.transport import EpicsCATransport
 from fastcs_standa_mirror.mirror_controller import MirrorController
 from fastcs_standa_mirror.utils import (
     load_devices,
-    load_or_create_home_pos,
+    load_or_create_saved_pos,
 )
 
 from . import __version__
@@ -32,35 +32,33 @@ def main() -> None:
         action="version",
         version=__version__,
     )
-    parser.add_argument(
-        "--sim",
-        action="store_true",
-        dest="use_sim",
-        help="Use simulated device",
-    )
+    parser.parse_args()
 
-    parsed_args = parser.parse_args()
-    use_sim = parsed_args.use_sim
+    # Load environment variables
+    load_dotenv()
 
-    # Validate device URIs and PV_PREFIX only if not using simulation
-    if not use_sim:
-        load_dotenv()
+    # Get device uris
+    device_pitch_uri = os.getenv("DEVICE_PITCH_URI")
+    device_yaw_uri = os.getenv("DEVICE_YAW_URI")
 
-        pv_prefix = os.getenv("PV_PREFIX")
-        print(pv_prefix)
-        if pv_prefix is None:
-            raise ValueError("PV_PREFIX environment variable must be set")
+    if device_pitch_uri is None or device_yaw_uri is None:
+        raise ValueError("DEVICE_PITCH_URI and DEVICE_YAW_URI must be set")
 
-        device_pitch_uri = os.getenv("DEVICE_PITCH_URI")
-        device_yaw_uri = os.getenv("DEVICE_YAW_URI")
-        if device_pitch_uri is None or device_yaw_uri is None:
-            raise ValueError("DEVICE_PITCH_URI and DEVICE_YAW_URI must be set")
+    # Detect if we're using a sim
+    use_sim = device_pitch_uri.startswith("SIM") or device_yaw_uri.startswith("SIM")
 
+    # Load pv prefix
+    pv_prefix = os.getenv("PV_PREFIX")
+
+    if pv_prefix is None:
+        raise ValueError("PV_PREFIX environment variable must be set")
+
+    if use_sim:
+        logging.info(f"Using simulated devices with PV_PREFIX -> {pv_prefix}")
     else:
-        pv_prefix = "MIRROR-SIM-001"
-        logging.info(f"Simulated device PV_PREFIX -> {pv_prefix}")
+        print(pv_prefix)
 
-    home_positions = load_or_create_home_pos()
+    saved_positions = load_or_create_saved_pos()
     uris = load_devices(use_sim=use_sim)
 
     # epics setup
@@ -73,7 +71,7 @@ def main() -> None:
     )
 
     # run fastcs instance
-    controller = MirrorController(uris["pitch"], uris["yaw"], home_positions)
+    controller = MirrorController(uris["pitch"], uris["yaw"], saved_positions)
     fastcs = FastCS(controller, [epics_ca])
 
     fastcs.run()
