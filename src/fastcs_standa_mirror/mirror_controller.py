@@ -5,6 +5,7 @@ from fastcs.controllers import Controller
 from fastcs.datatypes import Float
 from fastcs.methods import command
 
+from fastcs_standa_mirror.config import URIs
 from fastcs_standa_mirror.io.mirror_attribute import (
     MirrorAttributeIO,
     MirrorAttributeIORef,
@@ -19,11 +20,11 @@ class MirrorController(Controller):
     speed = AttrRW(Float(), io_ref=MirrorAttributeIORef("speed"), group="Global")
     jog_step = AttrRW(Float(), io_ref=MirrorAttributeIORef("jog_step"), group="Global")
 
-    def __init__(self, pitch_uri: str, yaw_uri: str, saved_positions: dict):
+    def __init__(self, uris: URIs, saved_positions: dict):
         super().__init__(ios=[MirrorAttributeIO(self)])
 
-        pitch = MotorController("pitch", pitch_uri)
-        yaw = MotorController("yaw", yaw_uri)
+        pitch = MotorController("pitch", uris.pitch)
+        yaw = MotorController("yaw", uris.yaw)
 
         self.pitch: MotorController
         self.yaw: MotorController

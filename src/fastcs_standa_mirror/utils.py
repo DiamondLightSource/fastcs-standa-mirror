@@ -1,9 +1,10 @@
 import logging
-import os
 from pathlib import Path
 
 import libximc.highlevel as ximc
 import yaml
+
+from fastcs_standa_mirror.config import URIs
 
 
 class DeviceNotFoundError(Exception):
@@ -12,24 +13,19 @@ class DeviceNotFoundError(Exception):
     pass
 
 
-def load_devices(use_sim: bool) -> dict:
-    """Load device uris for pitch and yaw controllers"""
+def load_devices(use_sim: bool, uris: URIs) -> URIs:
+    """Load devices for pitch and yaw controllers"""
 
-    return create_simulated_devices() if use_sim else load_real_devices()
+    return create_simulated_devices() if use_sim else load_real_devices(uris)
 
 
-def load_real_devices() -> dict:
+def load_real_devices(uris: URIs) -> URIs:
     """Discover and validate real device uris against config"""
 
     logging.info("Looking for real standa devices")
 
-    target_uris = {
-        "pitch": os.getenv("DEVICE_PITCH_URI"),
-        "yaw": os.getenv("DEVICE_YAW_URI"),
-    }
-
     logging.debug("Target uris:")
-    for v in target_uris.values():
+    for v in uris.model_dump().values():
         logging.debug(v)
 
     devices = ximc.enumerate_devices(ximc.EnumerateFlags.ENUMERATE_ALL_COM)
@@ -41,21 +37,19 @@ def load_real_devices() -> dict:
 
     missing_devices = []
 
-    for name, uri in target_uris.items():
+    for name, uri in uris.model_dump().items():
         if uri in real_uris:
             logging.info(f"Found {name} controller")
         else:
             missing_devices.append(name)
-
     if missing_devices:
         raise DeviceNotFoundError(
             f"Expected devices not found: {', '.join(missing_devices)}"
         )
+    return uris
 
-    return target_uris
 
-
-def create_simulated_devices() -> dict:
+def create_simulated_devices() -> URIs:
     """Create simulated devices and return uris"""
     logging.info("Creating simulated standa devices")
 
@@ -63,10 +57,10 @@ def create_simulated_devices() -> dict:
 
     device_uri_base = f"xi-emu:///{sim_dir}/simulated_motor_controller"
 
-    return {
-        "pitch": f"{device_uri_base}_pitch.bin",
-        "yaw": f"{device_uri_base}_yaw.bin",
-    }
+    return URIs(
+        pitch=f"{device_uri_base}_pitch.bin",
+        yaw=f"{device_uri_base}_yaw.bin",
+    )
 
 
 def load_or_create_saved_pos() -> dict:
