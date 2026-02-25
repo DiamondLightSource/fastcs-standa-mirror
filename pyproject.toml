@@ -41,7 +41,7 @@ dev = [
 ]
 
 [project.scripts]
-fastcs-standa-mirror = "fastcs_standa_mirror.__main__:main"
+fastcs-standa-mirror = "fastcs_standa_mirror.__main__:app"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/fastcs-standa-mirror"
