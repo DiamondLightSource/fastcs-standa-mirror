@@ -6,5 +6,5 @@ transport:
   - ioc:
       pv_prefix: PV_PREFIX
     gui:
-      output_path: /epics/opi/output.bob
+      output_path: /path/to/bobs/Mirror.bob
       title: Alignment Mirror
