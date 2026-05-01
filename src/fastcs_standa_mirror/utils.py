@@ -4,7 +4,7 @@ from pathlib import Path
 import libximc.highlevel as ximc
 import yaml
 
-from fastcs_standa_mirror.config import URIs
+from fastcs_standa_mirror.config import ControllerSerialSettings, URIs
 
 
 class DeviceNotFoundError(Exception):
@@ -13,40 +13,45 @@ class DeviceNotFoundError(Exception):
     pass
 
 
-def load_devices(use_sim: bool, uris: URIs) -> URIs:
+def load_devices(serial_settings: ControllerSerialSettings) -> URIs:
     """Load devices for pitch and yaw controllers"""
 
-    return create_simulated_devices() if use_sim else load_real_devices(uris)
+    assert serial_settings.pitch.port is not None
+    if serial_settings.pitch.port.upper() == "SIM":
+        return create_simulated_devices()
+    return load_real_devices(serial_settings)
 
 
-def load_real_devices(uris: URIs) -> URIs:
+def load_real_devices(serial_settings: ControllerSerialSettings) -> URIs:
     """Discover and validate real device uris against config"""
 
     logging.info("Looking for real standa devices")
 
-    logging.debug("Target uris:")
-    for v in uris.model_dump().values():
-        logging.debug(v)
-
     devices = ximc.enumerate_devices(ximc.EnumerateFlags.ENUMERATE_ALL_COM)
     real_uris = [device["uri"] for device in devices]
 
-    logging.debug("Real device uris:")
-    for uri in real_uris:
-        logging.debug(f"  {uri}")
+    logging.debug("Real device uris: %s", real_uris)
 
     missing_devices = []
 
-    for name, uri in uris.model_dump().items():
-        if uri in real_uris:
+    for name, settings in [
+        ("pitch", serial_settings.pitch),
+        ("yaw", serial_settings.yaw),
+    ]:
+        if settings.as_uri() in real_uris:
             logging.info(f"Found {name} controller")
         else:
             missing_devices.append(name)
+
     if missing_devices:
         raise DeviceNotFoundError(
             f"Expected devices not found: {', '.join(missing_devices)}"
         )
-    return uris
+
+    return URIs(
+        pitch=serial_settings.pitch.as_uri(),
+        yaw=serial_settings.yaw.as_uri(),
+    )
 
 
 def create_simulated_devices() -> URIs:
@@ -54,7 +59,6 @@ def create_simulated_devices() -> URIs:
     logging.info("Creating simulated standa devices")
 
     sim_dir = Path.cwd() / "sim"
-
     device_uri_base = f"xi-emu:///{sim_dir}/simulated_motor_controller"
 
     return URIs(
@@ -79,9 +83,7 @@ def load_yaml(filename: str) -> dict:
     """Load data from yaml"""
 
     with open(filename) as file:
-        data = yaml.safe_load(file)
-
-        return data
+        return yaml.safe_load(file)
 
 
 def save_pos(data: dict) -> None:

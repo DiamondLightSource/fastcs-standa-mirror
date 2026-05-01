@@ -3,7 +3,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from fastcs_standa_mirror.config import URIs
+from fastcs_standa_mirror.config import (
+    ControllerSerialSettings,
+    SerialSettings,
+    URIs,
+)
 from fastcs_standa_mirror.mirror_controller import MirrorController
 from fastcs_standa_mirror.utils import (
     DeviceNotFoundError,
@@ -12,26 +16,29 @@ from fastcs_standa_mirror.utils import (
     save_pos,
 )
 
-REAL_URIS = URIs(pitch="xi-com:\\\\.\\COM3", yaw="xi-com:\\\\.\\COM4")
-SIM_URIS = URIs(pitch="SIM/ttyACM0", yaw="SIM/ttyACM1")
+REAL_SERIAL_SETTINGS = ControllerSerialSettings(
+    pitch=SerialSettings(port="/dev/ttyACM0"),
+    yaw=SerialSettings(port="/dev/ttyACM1"),
+)
+REAL_URIS = URIs(pitch="xi-com:///dev/ttyACM0", yaw="xi-com:///dev/ttyACM1")
 
 
 @patch("libximc.highlevel.enumerate_devices")
 def test_detects_missing_motor(mock_enumerate):
-    mock_enumerate.return_value = [{"uri": "xi-com:\\\\.\\COM4"}]
+    mock_enumerate.return_value = [{"uri": "xi-com:///dev/ttyACM1"}]
     with pytest.raises(DeviceNotFoundError):
-        load_real_devices(REAL_URIS)
+        load_real_devices(REAL_SERIAL_SETTINGS)
 
 
 @patch("libximc.highlevel.enumerate_devices")
 def test_finds_both_motors_successfully(mock_enumerate):
     mock_enumerate.return_value = [
-        {"uri": "xi-com:\\\\.\\COM3"},
-        {"uri": "xi-com:\\\\.\\COM4"},
+        {"uri": "xi-com:///dev/ttyACM0"},
+        {"uri": "xi-com:///dev/ttyACM1"},
     ]
-    result = load_real_devices(REAL_URIS)
-    assert result.pitch == "xi-com:\\\\.\\COM3"
-    assert result.yaw == "xi-com:\\\\.\\COM4"
+    result = load_real_devices(REAL_SERIAL_SETTINGS)
+    assert result.pitch == "xi-com:///dev/ttyACM0"
+    assert result.yaw == "xi-com:///dev/ttyACM1"
 
 
 @patch("fastcs_standa_mirror.motor_controller.ximc.Axis")

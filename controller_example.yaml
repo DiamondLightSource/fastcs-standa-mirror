@@ -1,10 +1,12 @@
 controller:
-  uris:
-    pitch: SIM/000000
-    yaw: SIM/000001
+  serial_settings:
+    pitch:
+      port: SIM-00
+    yaw:
+      port: SIM-01
 transport:
   - ioc:
       pv_prefix: PV_PREFIX
     gui:
-      output_path: /path/to/bobs/Mirror.bob
+      output_path: /path/to/bobs/index.bob
       title: Alignment Mirror
