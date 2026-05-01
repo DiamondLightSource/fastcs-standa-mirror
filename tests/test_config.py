@@ -32,9 +32,9 @@ class TestSerialSettings:
             SerialSettings()
 
     def test_sim_port(self):
-        s = SerialSettings(port="SIM")
+        s = SerialSettings(port="SIM-00")
         assert s.port is not None
-        assert s.port.upper() == "SIM"
+        assert s.port.upper().startswith("SIM")
 
 
 class TestControllerSerialSettings:

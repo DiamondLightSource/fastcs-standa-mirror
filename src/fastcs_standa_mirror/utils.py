@@ -17,7 +17,7 @@ def load_devices(serial_settings: ControllerSerialSettings) -> URIs:
     """Load devices for pitch and yaw controllers"""
 
     assert serial_settings.pitch.port is not None
-    if serial_settings.pitch.port.upper() == "SIM":
+    if serial_settings.pitch.port.upper().startswith("SIM"):
         return create_simulated_devices()
     return load_real_devices(serial_settings)
 
