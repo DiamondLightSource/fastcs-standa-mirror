@@ -47,26 +47,17 @@ def main(
 
 @cache
 def load_config(config_file: Path) -> Config:
-    config = Config(**yaml.safe_load(config_file.read_text()))
-
-    config.controller.sim = any(
-        uri.startswith("SIM")
-        for uri in [config.controller.uris.pitch, config.controller.uris.yaw]
-    )
-
-    return config
+    return Config(**yaml.safe_load(config_file.read_text()))
 
 
 @app.command()
 def run(config_file: Path):
     config = load_config(config_file)
 
-    if config.controller.sim:
-        logging.info("Using simulated devices")
     logging.info(f"PV PREFIX = {config.transport[0].ioc.pv_prefix}")
 
     saved_positions = load_or_create_saved_pos()
-    uris = load_devices(use_sim=config.controller.sim, uris=config.controller.uris)
+    uris = load_devices(config.controller.serial_settings)
 
     epics_ca = EpicsCATransport(
         gui=EpicsGUIOptions(
