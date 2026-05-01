@@ -10,8 +10,9 @@ FastCS support for two axis alignment mirror with 8SMC5 Standa Motor Controllers
 This is where you should write a short paragraph that describes what your module does,
 how it does it, and why people should use it.
 
-Source          | <https://github.com/DiamondLightSource/fastcs-standa-mirror>
+What            | Where
 :---:           | :---:
+Source          | <https://github.com/DiamondLightSource/fastcs-standa-mirror>
 Docker          | `docker run ghcr.io/diamondlightsource/fastcs-standa-mirror:latest`
 Releases        | <https://github.com/DiamondLightSource/fastcs-standa-mirror/releases>
 
