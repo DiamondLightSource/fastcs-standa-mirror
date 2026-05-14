@@ -530,7 +530,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastcs", specifier = ">=0.11.3" },
-    { name = "libximc", specifier = ">=2.14.30" },
+    { name = "libximc", specifier = "==3.0.2" },
     { name = "p4p", specifier = ">=4.2.1" },
     { name = "pvi", specifier = ">=0.11.0" },
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
@@ -743,11 +743,11 @@ wheels = [
 
 [[package]]
 name = "libximc"
-version = "2.14.30"
+version = "3.0.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/38/73/677feacddabc4c15f49fed2aafca7189aac93cfdeb3d719b6b62b566b6b3/libximc-2.14.30.tar.gz", hash = "sha256:203b993e236ee700f7ea3b8fae6c9f51e5d003ec0efbd4cbcfb4e0775bd4b163", size = 4530881, upload-time = "2025-07-18T10:55:45.437Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/70/f215554b0903657d40b08cc0a591a87c35a884bd14e0778117ec5a159abc/libximc-3.0.2.tar.gz", hash = "sha256:52c7e7c26c94fe245a2f083188663e1560dd80e8b31a61f5096f77b8efa30631", size = 5475950, upload-time = "2026-01-27T07:19:42.486Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/ad/9bd552948ffcf09abf542623daef6265d19bfb062b94081f42bbff909d1d/libximc-2.14.30-py3-none-any.whl", hash = "sha256:00f723124db39e8bb1fe12ddcb672c3175d315e674029704d3a8badb265c4acb", size = 4571805, upload-time = "2025-07-18T10:55:43.197Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/a2/3d11d8bd77a62baca95743726581a6c9459c3cc5a3a109324416f5406048/libximc-3.0.2-py3-none-any.whl", hash = "sha256:a92b2e52dff361ff92cc304957bb3231c877849038e99509d3affa779a8732fd", size = 5534104, upload-time = "2026-01-27T07:19:39.898Z" },
 ]
 
 [[package]]
