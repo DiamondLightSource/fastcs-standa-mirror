@@ -2,7 +2,9 @@ import logging
 from pathlib import Path
 
 import libximc.highlevel as ximc
+import libximc.highlevel.flag_enumerations as flag_enumerations
 import yaml
+from libximc.highlevel import _structure_types as st
 
 from fastcs_standa_mirror.config import ControllerSerialSettings, URIs
 
@@ -11,6 +13,29 @@ class DeviceNotFoundError(Exception):
     """Raised when expected device uris are not found"""
 
     pass
+
+
+def patch_move_flags():
+    """Work around libximc MoveFlags enum rejecting valid hardware values.
+
+    The highlevel API's MoveFlags enum only defines RPM_DIV_1000 (0x01),
+    but real hardware can return additional undocumented bits (e.g. 0xCC),
+    causing a ValueError. This masks unrecognised bits until there is a fix
+    on the enum upstream.
+    """
+    prop = st.move_settings_t.__dict__["MoveFlags"]
+    assert prop.fset is not None, "MoveFlags property has no setter"
+    original_fset = prop.fset
+
+    def tolerant_setter(self, val):
+        if isinstance(val, int):
+            known_bits = 0
+            for member in flag_enumerations.MoveFlags:
+                known_bits |= member.value
+            val = val & known_bits
+        original_fset(self, val)
+
+    st.move_settings_t.MoveFlags = st.move_settings_t.MoveFlags.setter(tolerant_setter)
 
 
 def load_devices(serial_settings: ControllerSerialSettings) -> URIs:

@@ -15,6 +15,7 @@ from fastcs_standa_mirror.mirror_controller import MirrorController
 from fastcs_standa_mirror.utils import (
     load_devices,
     load_or_create_saved_pos,
+    patch_move_flags,
 )
 
 from . import __version__
@@ -66,6 +67,8 @@ def run(config_file: Path):
         ),
         epicsca=EpicsIOCOptions(pv_prefix=config.transport[0].ioc.pv_prefix),
     )
+
+    patch_move_flags()
 
     # run fastcs instance
     controller = MirrorController(uris, saved_positions)
