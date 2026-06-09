@@ -7,6 +7,7 @@ from libximc.highlevel import _structure_types as st
 
 from fastcs_standa_mirror.config import ControllerSerialSettings, URIs
 
+# flag definition for patch flags
 KNOWN_MOVE_FLAGS_MASK = 0x01  # RPM_DIV_1000, the only defined flag
 
 
