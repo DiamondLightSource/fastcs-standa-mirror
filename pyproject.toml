@@ -13,7 +13,7 @@ classifiers = [
 ]
 description = "FastCS support for two axis alignment mirror with 8SMC5 Standa Motor Controllers"
 dependencies = [
-    "fastcs>=0.11.3",
+    "fastcs==0.14.0",
     "libximc==3.0.2",
     "p4p>=4.2.1",
     "pvi>=0.11.0",

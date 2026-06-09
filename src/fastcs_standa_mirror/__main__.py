@@ -7,7 +7,7 @@ from pathlib import Path
 import typer
 import yaml
 from fastcs.launch import FastCS
-from fastcs.transports.epics import EpicsGUIOptions, EpicsIOCOptions
+from fastcs.transports.epics import EpicsGUIOptions
 from fastcs.transports.epics.ca.transport import EpicsCATransport
 
 from fastcs_standa_mirror.config import Config
@@ -55,23 +55,24 @@ def load_config(config_file: Path) -> Config:
 def run(config_file: Path):
     config = load_config(config_file)
 
-    logging.info(f"PV PREFIX = {config.transport[0].ioc.pv_prefix}")
+    pv_prefix = config.transport[0].ioc.pv_prefix
+    logging.info(f"PV PREFIX = {pv_prefix}")
 
     saved_positions = load_or_create_saved_pos()
     uris = load_devices(config.controller.serial_settings)
 
     epics_ca = EpicsCATransport(
         gui=EpicsGUIOptions(
-            output_path=Path(config.transport[0].gui.output_path),
+            output_dir=Path(config.transport[0].gui.output_path),
             title=config.transport[0].gui.title,
-        ),
-        epicsca=EpicsIOCOptions(pv_prefix=config.transport[0].ioc.pv_prefix),
+        )
     )
 
     patch_move_flags()
 
     # run fastcs instance
     controller = MirrorController(uris, saved_positions)
+    controller.set_path([pv_prefix])
     fastcs = FastCS(controller, [epics_ca])
 
     fastcs.run()
