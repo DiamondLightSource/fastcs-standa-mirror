@@ -14,6 +14,20 @@
                 "debug-test"
             ],
             "console": "integratedTerminal",
-        }
+        },
+        {
+            "name": "Standa Motorised Mirror IOC",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "module": "fastcs_standa_mirror",
+            "args": [
+                "run",
+                "${workspaceFolder:fastcs-standa-mirror}/src/fastcs_standa_mirror/fastcs.yaml",
+                "--log-level",
+                "TRACE",
+            ],
+            "console": "integratedTerminal",
+        },
     ]
 }

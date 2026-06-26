@@ -5,40 +5,45 @@ from fastcs.controllers import Controller
 from fastcs.datatypes import Float
 from fastcs.methods import command
 
-from fastcs_standa_mirror.config import URIs
+from fastcs_standa_mirror.config import MirrorOptions
 from fastcs_standa_mirror.io.mirror_attribute import (
     MirrorAttributeIO,
     MirrorAttributeIORef,
 )
 from fastcs_standa_mirror.motor_controller import MotorController
-from fastcs_standa_mirror.utils import save_pos
+from fastcs_standa_mirror.utils import load_devices, load_or_create_saved_pos, save_pos
 
 
 class MirrorController(Controller):
     """Controller for two axis mirror"""
 
+    pitch: MotorController
+    yaw: MotorController
+
     speed = AttrRW(Float(), io_ref=MirrorAttributeIORef("speed"), group="Global")
     jog_step = AttrRW(Float(), io_ref=MirrorAttributeIORef("jog_step"), group="Global")
 
-    def __init__(self, uris: URIs, saved_positions: dict):
+    def __init__(self, options: MirrorOptions) -> None:
         super().__init__(ios=[MirrorAttributeIO(self)])
+        uris = load_devices(options.serial_settings)
 
-        pitch = MotorController("pitch", uris.pitch)
-        yaw = MotorController("yaw", uris.yaw)
+        self.pitch = MotorController(uris.pitch)
+        self.yaw = MotorController(uris.yaw)
 
-        self.pitch: MotorController
-        self.yaw: MotorController
+        self.jog_step_size: int = 1
 
-        self.add_sub_controller("pitch", pitch)
-        self.add_sub_controller("yaw", yaw)
+    # async def initialise(self):
+    #     return await super().initialise()
 
-        self.pitch.set_saved_position(saved_positions.get("pitch", 0))
-        self.yaw.set_saved_position(saved_positions.get("yaw", 0))
+    async def connect(self) -> None:
+        await self.pitch.connect()
+        await self.yaw.connect()
 
-        self.jog_step_size: int = 100
+        saved = load_or_create_saved_pos()
+        self.pitch.set_saved_position(saved.get("pitch", 0))
+        self.yaw.set_saved_position(saved.get("yaw", 0))
 
-    async def initialise(self):
-        return await super().initialise()
+        await super().connect()
 
     @command()
     async def home(self) -> None:
