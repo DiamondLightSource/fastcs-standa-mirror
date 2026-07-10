@@ -30,8 +30,8 @@ class MotorAttributeIO(AttributeIO[NumberT, MotorAttributeIORef]):
             position = self._master.motor.get_position()
             await attr.update(position.Position)
 
-        elif attr.io_ref.name == "home":
-            await attr.update(await self._master.get_home_position())
+        elif attr.io_ref.name == "saved":
+            await attr.update(await self._master.get_saved_position())
 
         elif attr.io_ref.name == "moving":
             status = self._master.motor.get_status()

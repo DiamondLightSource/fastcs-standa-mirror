@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=schema.json
+controllers:
+  - id: TEST
+    type: fastcs_standa_mirror.MirrorController
+    serial_settings:
+      pitch:
+        port: SIM-00
+      yaw:
+        port: SIM-01
+transport:
+  - epicsca: {}
+    gui:
+      title: "Test"
+      output_dir: ./opi/

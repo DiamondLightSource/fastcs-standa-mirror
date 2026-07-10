@@ -30,29 +30,10 @@ class ControllerSerialSettings(BaseModel):
     yaw: SerialSettings
 
 
-class URIs(BaseModel):
-    pitch: str
-    yaw: str
-
-
-class ControllerConfig(BaseModel):
+class MirrorOptions(BaseModel):
     serial_settings: ControllerSerialSettings
 
 
-class IOCConfig(BaseModel):
-    pv_prefix: str
-
-
-class GUIConfig(BaseModel):
-    output_path: str
-    title: str
-
-
-class TransportConfig(BaseModel):
-    ioc: IOCConfig
-    gui: GUIConfig
-
-
-class Config(BaseModel):
-    controller: ControllerConfig
-    transport: list[TransportConfig]
+class URIs(BaseModel):
+    pitch: str
+    yaw: str

@@ -71,7 +71,5 @@ lockfiles/
 .ruff_cache/
 
 .env
-bob/
-bob_custom/
+opi
 saved.yaml
-controller.yaml

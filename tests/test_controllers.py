@@ -5,8 +5,8 @@ import pytest
 
 from fastcs_standa_mirror.config import (
     ControllerSerialSettings,
+    MirrorOptions,
     SerialSettings,
-    URIs,
 )
 from fastcs_standa_mirror.mirror_controller import MirrorController
 from fastcs_standa_mirror.utils import (
@@ -20,7 +20,13 @@ REAL_SERIAL_SETTINGS = ControllerSerialSettings(
     pitch=SerialSettings(port="/dev/ttyACM0"),
     yaw=SerialSettings(port="/dev/ttyACM1"),
 )
-REAL_URIS = URIs(pitch="xi-com:///dev/ttyACM0", yaw="xi-com:///dev/ttyACM1")
+
+SIM_OPTIONS = MirrorOptions(
+    serial_settings=ControllerSerialSettings(
+        pitch=SerialSettings(port="SIM-00"),
+        yaw=SerialSettings(port="SIM-01"),
+    )
+)
 
 
 @patch("libximc.highlevel.enumerate_devices")
@@ -43,36 +49,43 @@ def test_finds_both_motors_successfully(mock_enumerate):
 
 @patch("fastcs_standa_mirror.motor_controller.ximc.Axis")
 @pytest.mark.asyncio
-async def test_mirror_stop_affects_both_motors(mock_axis):
+async def test_mirror_stop_affects_both_motors(mock_axis, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     mock_motor = Mock()
     mock_axis.return_value = mock_motor
-    controller = MirrorController(REAL_URIS, {"pitch": 0, "yaw": 0})
+    controller = MirrorController(SIM_OPTIONS)
+    await controller.connect()
     await controller.stop_moving()
     assert mock_motor.command_stop.call_count == 2
 
 
 @patch("fastcs_standa_mirror.motor_controller.ximc.Axis")
 @pytest.mark.asyncio
-async def test_jog_commands_use_correct_step_size(mock_axis):
+async def test_jog_commands_use_correct_step_size(mock_axis, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     mock_motor = Mock()
     mock_axis.return_value = mock_motor
-    controller = MirrorController(REAL_URIS, {"pitch": 0, "yaw": 0})
+    controller = MirrorController(SIM_OPTIONS)
+    await controller.connect()
     await controller.up()
-    mock_motor.command_movr.assert_called_with(100, 0)
+    mock_motor.command_movr.assert_called_with(1, 0)
     await controller.down()
-    mock_motor.command_movr.assert_called_with(-100, 0)
+    mock_motor.command_movr.assert_called_with(-1, 0)
     await controller.left()
-    mock_motor.command_movr.assert_called_with(100, 0)
+    mock_motor.command_movr.assert_called_with(1, 0)
     await controller.right()
-    mock_motor.command_movr.assert_called_with(-100, 0)
+    mock_motor.command_movr.assert_called_with(-1, 0)
 
 
+@patch("fastcs_standa_mirror.mirror_controller.load_or_create_saved_pos")
 @patch("fastcs_standa_mirror.motor_controller.ximc.Axis")
 @pytest.mark.asyncio
-async def test_return_moves_both_motors_to_saved(mock_axis):
+async def test_return_moves_both_motors_to_saved(mock_axis, mock_saved):
+    mock_saved.return_value = {"pitch": 1500, "yaw": 2500}
     mock_motor = Mock()
     mock_axis.return_value = mock_motor
-    controller = MirrorController(REAL_URIS, {"pitch": 1000, "yaw": 2000})
+    controller = MirrorController(SIM_OPTIONS)
+    await controller.connect()
     await controller.return_to_saved()
     assert mock_motor.command_move.call_count == 2
 
