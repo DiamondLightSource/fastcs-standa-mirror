@@ -17,14 +17,26 @@ class MotorController(Controller):
 
     _device_uri: str = ""
 
-    current = AttrR(Float(), io_ref=MotorAttributeIORef("current"), group="Position")
-    saved = AttrR(Float(), io_ref=MotorAttributeIORef("saved"), group="Position")
-    moving = AttrR(Bool(), io_ref=MotorAttributeIORef("moving"), group="Status")
+    current: AttrR
+    saved: AttrR
+    moving: AttrR
+    speed: AttrR
 
     def __init__(self, device_uri: str) -> None:
         super().__init__(ios=[MotorAttributeIO(self)])
         self._device_uri = device_uri
         self.saved_position: int = 0
+
+        self.current = AttrR(
+            Float(), io_ref=MotorAttributeIORef("current"), group="Position"
+        )
+        self.saved = AttrR(
+            Float(), io_ref=MotorAttributeIORef("saved"), group="Position"
+        )
+        self.moving = AttrR(
+            Bool(), io_ref=MotorAttributeIORef("moving"), group="Status"
+        )
+        self.speed = AttrR(Float(), io_ref=MotorAttributeIORef("speed"), group="Status")
 
     async def connect(self) -> None:
         try:
@@ -45,6 +57,16 @@ class MotorController(Controller):
         """Stop motor"""
         logging.info(f"Stopping {self.path[-1]} motor")
         self.motor.command_stop()
+
+    async def set_speed(self, value: float) -> None:
+        """Command the motor speed on the hardware.
+
+        Deliberately not a an AttrW, so operators get no per-axis speed control. Only
+        the mirror calls this.
+        """
+        move_settings = self.motor.get_move_settings()
+        move_settings.Speed = int(value)
+        self.motor.set_move_settings(move_settings)
 
     async def move_absolute(self, position: int) -> None:
         """Move to absolute position"""
