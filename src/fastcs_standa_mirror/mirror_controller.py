@@ -100,11 +100,11 @@ class MirrorController(Controller):
         """Jog down"""
         step = self.jog_step.get()
         logging.info(f"Jogging down by {step}")
-        await self.pitch.move_relative(step)
+        await self.pitch.move_relative(-step)
 
     @command(group="Jog")
     async def right(self) -> None:
         """Jog right"""
         step = self.jog_step.get()
         logging.info(f"Jogging right by {step}")
-        await self.yaw.move_relative(step)
+        await self.yaw.move_relative(-step)
