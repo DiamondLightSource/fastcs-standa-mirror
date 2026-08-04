@@ -48,6 +48,12 @@ class MirrorController(Controller):
         self.pitch.set_saved_position(saved.get("pitch", 0))
         self.yaw.set_saved_position(saved.get("yaw", 0))
 
+        # seed the mirror speed from hardware so the setpoint doesn't latch to 0
+        await self.pitch.speed.bind_update_callback()()
+        await self.yaw.speed.bind_update_callback()()
+        if self.pitch.speed.get() == self.yaw.speed.get():
+            await self.speed.update(self.pitch.speed.get())
+
         await super().connect()
 
     @command()
