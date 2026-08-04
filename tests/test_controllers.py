@@ -32,11 +32,7 @@ SIM_OPTIONS = MirrorOptions(
 
 @pytest.fixture
 def mock_motor():
-    """Mocked ximc axis shared by both simulated motors.
-
-    Speed is read via get_move_settings().Speed, so give it a real number
-    (connect() seeds the mirror speed from it).
-    """
+    """Mocked ximc axis shared by both simulated motors."""
     motor = Mock()
     motor.get_move_settings.return_value.Speed = 1000
     return motor
@@ -44,20 +40,15 @@ def mock_motor():
 
 @pytest_asyncio.fixture
 async def controller(mock_motor, tmp_path, monkeypatch):
-    """A wired but *unconnected* MirrorController with both motors mocked.
-
-    Wiring (initialise + _connect_attribute_ios) replays what FastCS does at
-    startup, so attribute puts/polls and the connect() speed-seeding work.
-    Tests call `await controller.connect()` themselves, to control timing.
-    """
+    """A wired but *unconnected* MirrorController with both motors mocked."""
     monkeypatch.chdir(tmp_path)
     with patch(
         "fastcs_standa_mirror.motor_controller.ximc.Axis", return_value=mock_motor
     ):
-        c = MirrorController(SIM_OPTIONS)
-        await c.initialise()
-        c._connect_attribute_ios()
-        yield c
+        controller = MirrorController(SIM_OPTIONS)
+        await controller.initialise()
+        controller._connect_attribute_ios()
+        yield controller
 
 
 # --------------------------------------------------------------- device load ---
@@ -65,6 +56,7 @@ async def controller(mock_motor, tmp_path, monkeypatch):
 
 @patch("libximc.highlevel.enumerate_devices")
 def test_detects_missing_motor(mock_enumerate):
+    """Correct error is raised when a device is not present."""
     mock_enumerate.return_value = [{"uri": "xi-com:///dev/ttyACM1"}]
     with pytest.raises(DeviceNotFoundError):
         load_real_devices(REAL_SERIAL_SETTINGS)
@@ -72,6 +64,7 @@ def test_detects_missing_motor(mock_enumerate):
 
 @patch("libximc.highlevel.enumerate_devices")
 def test_finds_both_motors_successfully(mock_enumerate):
+    """Devices are loaded correctly when present."""
     mock_enumerate.return_value = [
         {"uri": "xi-com:///dev/ttyACM0"},
         {"uri": "xi-com:///dev/ttyACM1"},
@@ -86,6 +79,7 @@ def test_finds_both_motors_successfully(mock_enumerate):
 
 @pytest.mark.asyncio
 async def test_mirror_stop_affects_both_motors(controller, mock_motor):
+    """Mirror stop command stops both motors."""
     await controller.connect()
     await controller.stop_moving()
     assert mock_motor.command_stop.call_count == 2
@@ -93,20 +87,22 @@ async def test_mirror_stop_affects_both_motors(controller, mock_motor):
 
 @pytest.mark.asyncio
 async def test_jog_commands_use_correct_step_size(controller, mock_motor):
+    """Jog commands move in expected directions."""
     await controller.connect()
     await controller.up()
     mock_motor.command_movr.assert_called_with(1, 0)
     await controller.down()
     mock_motor.command_movr.assert_called_with(-1, 0)
     await controller.left()
-    mock_motor.command_movr.assert_called_with(1, 0)
+    mock_motor.command_movr.assert_called_with(1, 0)  # same values, different motor
     await controller.right()
-    mock_motor.command_movr.assert_called_with(-1, 0)
+    mock_motor.command_movr.assert_called_with(-1, 0)  # same values, different motor
 
 
 @patch("fastcs_standa_mirror.mirror_controller.load_or_create_saved_pos")
 @pytest.mark.asyncio
 async def test_return_moves_both_motors_to_saved(mock_saved, controller, mock_motor):
+    """Return command moves motors to a position that matches the saved position."""
     mock_saved.return_value = {"pitch": 1500, "yaw": 2500}
     await controller.connect()
     await controller.return_to_saved()
@@ -114,6 +110,7 @@ async def test_return_moves_both_motors_to_saved(mock_saved, controller, mock_mo
 
 
 def test_saved_position_save_and_load(tmp_path):
+    """Saving and reloading from a file gives the same position."""
     original_dir = os.getcwd()
     os.chdir(tmp_path)
     try:
@@ -141,7 +138,7 @@ async def test_speed_put_fans_out_to_both_motors(controller, mock_motor):
 
 @pytest.mark.asyncio
 async def test_mirror_flags_speed_mismatch(controller):
-    """If the axes disagree, the mirror must not report a bogus common value."""
+    """If the axes disagree, the mirror shoudn't report a common value."""
     await controller.connect()
 
     await controller.pitch.speed.update(750)
