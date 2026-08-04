@@ -2,6 +2,7 @@ import os
 from unittest.mock import Mock, patch
 
 import pytest
+import pytest_asyncio
 
 from fastcs_standa_mirror.config import (
     ControllerSerialSettings,
@@ -29,8 +30,33 @@ SIM_OPTIONS = MirrorOptions(
 )
 
 
+@pytest.fixture
+def mock_motor():
+    """Mocked ximc axis shared by both simulated motors."""
+    motor = Mock()
+    motor.get_move_settings.return_value.Speed = 1000
+    return motor
+
+
+@pytest_asyncio.fixture
+async def controller(mock_motor, tmp_path, monkeypatch):
+    """A wired but *unconnected* MirrorController with both motors mocked."""
+    monkeypatch.chdir(tmp_path)
+    with patch(
+        "fastcs_standa_mirror.motor_controller.ximc.Axis", return_value=mock_motor
+    ):
+        controller = MirrorController(SIM_OPTIONS)
+        await controller.initialise()
+        controller._connect_attribute_ios()
+        yield controller
+
+
+# --------------------------------------------------------------- device load ---
+
+
 @patch("libximc.highlevel.enumerate_devices")
 def test_detects_missing_motor(mock_enumerate):
+    """Correct error is raised when a device is not present."""
     mock_enumerate.return_value = [{"uri": "xi-com:///dev/ttyACM1"}]
     with pytest.raises(DeviceNotFoundError):
         load_real_devices(REAL_SERIAL_SETTINGS)
@@ -38,6 +64,7 @@ def test_detects_missing_motor(mock_enumerate):
 
 @patch("libximc.highlevel.enumerate_devices")
 def test_finds_both_motors_successfully(mock_enumerate):
+    """Devices are loaded correctly when present."""
     mock_enumerate.return_value = [
         {"uri": "xi-com:///dev/ttyACM0"},
         {"uri": "xi-com:///dev/ttyACM1"},
@@ -47,57 +74,97 @@ def test_finds_both_motors_successfully(mock_enumerate):
     assert result.yaw == "xi-com:///dev/ttyACM1"
 
 
-@patch("fastcs_standa_mirror.motor_controller.ximc.Axis")
+# ------------------------------------------------------------------- commands ---
+
+
 @pytest.mark.asyncio
-async def test_mirror_stop_affects_both_motors(mock_axis, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    mock_motor = Mock()
-    mock_axis.return_value = mock_motor
-    controller = MirrorController(SIM_OPTIONS)
+async def test_mirror_stop_affects_both_motors(controller, mock_motor):
+    """Mirror stop command stops both motors."""
     await controller.connect()
     await controller.stop_moving()
     assert mock_motor.command_stop.call_count == 2
 
 
-@patch("fastcs_standa_mirror.motor_controller.ximc.Axis")
 @pytest.mark.asyncio
-async def test_jog_commands_use_correct_step_size(mock_axis, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    mock_motor = Mock()
-    mock_axis.return_value = mock_motor
-    controller = MirrorController(SIM_OPTIONS)
+async def test_jog_commands_use_correct_step_size(controller, mock_motor):
+    """Jog commands move in expected directions."""
     await controller.connect()
     await controller.up()
     mock_motor.command_movr.assert_called_with(1, 0)
     await controller.down()
     mock_motor.command_movr.assert_called_with(-1, 0)
     await controller.left()
-    mock_motor.command_movr.assert_called_with(1, 0)
+    mock_motor.command_movr.assert_called_with(1, 0)  # same values, different motor
     await controller.right()
-    mock_motor.command_movr.assert_called_with(-1, 0)
+    mock_motor.command_movr.assert_called_with(-1, 0)  # same values, different motor
 
 
 @patch("fastcs_standa_mirror.mirror_controller.load_or_create_saved_pos")
-@patch("fastcs_standa_mirror.motor_controller.ximc.Axis")
 @pytest.mark.asyncio
-async def test_return_moves_both_motors_to_saved(mock_axis, mock_saved):
+async def test_return_moves_both_motors_to_saved(mock_saved, controller, mock_motor):
+    """Return command moves motors to a position that matches the saved position."""
     mock_saved.return_value = {"pitch": 1500, "yaw": 2500}
-    mock_motor = Mock()
-    mock_axis.return_value = mock_motor
-    controller = MirrorController(SIM_OPTIONS)
     await controller.connect()
     await controller.return_to_saved()
     assert mock_motor.command_move.call_count == 2
 
 
 def test_saved_position_save_and_load(tmp_path):
+    """Saving and reloading from a file gives the same position."""
     original_dir = os.getcwd()
     os.chdir(tmp_path)
     try:
-        saved_data = {"pitch": 1500, "yaw": 2500}
-        save_pos(saved_data)
+        save_pos({"pitch": 1500, "yaw": 2500})
         loaded_data = load_or_create_saved_pos()
         assert loaded_data["pitch"] == 1500
         assert loaded_data["yaw"] == 2500
     finally:
         os.chdir(original_dir)
+
+
+# ---------------------------------------------------------------------- speed ---
+
+
+@pytest.mark.asyncio
+async def test_speed_put_fans_out_to_both_motors(controller, mock_motor):
+    """Writing the mirror speed commands set_speed on both motors."""
+    await controller.connect()
+
+    await controller.speed.put(500)
+
+    assert mock_motor.set_move_settings.call_count == 2
+    assert mock_motor.get_move_settings.return_value.Speed == 500
+
+
+@pytest.mark.asyncio
+async def test_mirror_flags_speed_mismatch(controller):
+    """If the axes disagree, the mirror shoudn't report a common value."""
+    await controller.connect()
+
+    await controller.pitch.speed.update(750)
+    await controller.yaw.speed.update(600)
+
+    await controller.speed.bind_update_callback()()
+
+    assert controller.speed.get() == 0.0
+
+
+@pytest.mark.asyncio
+async def test_mirror_reports_common_speed_when_axes_agree(controller):
+    """When both axes read the same speed, the mirror reflects it."""
+    await controller.connect()
+
+    await controller.pitch.speed.update(1000)
+    await controller.yaw.speed.update(1000)
+
+    await controller.speed.bind_update_callback()()
+
+    assert controller.speed.get() == 1000
+
+
+@pytest.mark.asyncio
+async def test_connect_seeds_speed_from_hardware(controller):
+    """After connect(), the mirror reflects the motors' hardware speed, not 0."""
+    assert controller.speed.get() == 0.0
+    await controller.connect()
+    assert controller.speed.get() == 1000

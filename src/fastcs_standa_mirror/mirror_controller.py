@@ -2,7 +2,7 @@ import logging
 
 from fastcs.attributes import AttrRW
 from fastcs.controllers import Controller
-from fastcs.datatypes import Float
+from fastcs.datatypes import Float, Int
 from fastcs.methods import command
 
 from fastcs_standa_mirror.config import MirrorOptions
@@ -20,8 +20,8 @@ class MirrorController(Controller):
     pitch: MotorController
     yaw: MotorController
 
-    speed = AttrRW(Float(), io_ref=MirrorAttributeIORef("speed"), group="Global")
-    jog_step = AttrRW(Float(), io_ref=MirrorAttributeIORef("jog_step"), group="Global")
+    speed: AttrRW
+    jog_step: AttrRW
 
     def __init__(self, options: MirrorOptions) -> None:
         super().__init__(ios=[MirrorAttributeIO(self)])
@@ -30,10 +30,15 @@ class MirrorController(Controller):
         self.pitch = MotorController(uris.pitch)
         self.yaw = MotorController(uris.yaw)
 
-        self.jog_step_size: int = 1
-
-    # async def initialise(self):
-    #     return await super().initialise()
+        self.speed = AttrRW(
+            Float(),
+            io_ref=MirrorAttributeIORef(
+                name="speed",
+                motors=[self.pitch, self.yaw],
+            ),
+            group="Global",
+        )
+        self.jog_step = AttrRW(Int(), initial_value=1, group="Global")
 
     async def connect(self) -> None:
         await self.pitch.connect()
@@ -42,6 +47,12 @@ class MirrorController(Controller):
         saved = load_or_create_saved_pos()
         self.pitch.set_saved_position(saved.get("pitch", 0))
         self.yaw.set_saved_position(saved.get("yaw", 0))
+
+        # seed the mirror speed from hardware so the setpoint doesn't latch to 0
+        await self.pitch.speed.bind_update_callback()()
+        await self.yaw.speed.bind_update_callback()()
+        if self.pitch.speed.get() == self.yaw.speed.get():
+            await self.speed.update(self.pitch.speed.get())
 
         await super().connect()
 
@@ -79,23 +90,27 @@ class MirrorController(Controller):
     @command(group="Jog")
     async def up(self) -> None:
         """Jog up"""
-        logging.info(f"Jogging up by {self.jog_step_size}")
-        await self.pitch.move_relative(int(self.jog_step_size))
+        step = self.jog_step.get()
+        logging.info(f"Jogging up by {step}")
+        await self.pitch.move_relative(step)
 
     @command(group="Jog")
     async def left(self) -> None:
         """Jog left"""
-        logging.info(f"Jogging left by {self.jog_step_size}")
-        await self.yaw.move_relative(int(self.jog_step_size))
+        step = self.jog_step.get()
+        logging.info(f"Jogging left by {step}")
+        await self.yaw.move_relative(step)
 
     @command(group="Jog")
     async def down(self) -> None:
         """Jog down"""
-        logging.info(f"Jogging down by {self.jog_step_size}")
-        await self.pitch.move_relative(-int(self.jog_step_size))
+        step = self.jog_step.get()
+        logging.info(f"Jogging down by {step}")
+        await self.pitch.move_relative(-step)
 
     @command(group="Jog")
     async def right(self) -> None:
         """Jog right"""
-        logging.info(f"Jogging right by {self.jog_step_size}")
-        await self.yaw.move_relative(-int(self.jog_step_size))
+        step = self.jog_step.get()
+        logging.info(f"Jogging right by {step}")
+        await self.yaw.move_relative(-step)
