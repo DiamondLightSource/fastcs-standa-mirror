@@ -10,6 +10,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 description = "FastCS support for two axis alignment mirror with 8SMC5 Standa Motor Controllers"
 dependencies = [
@@ -30,7 +31,6 @@ requires-python = ">=3.11"
 
 [dependency-groups]
 dev = [
-    "copier",
     "pre-commit",
     "pyright",
     "pytest",
@@ -49,6 +49,10 @@ GitHub = "https://github.com/DiamondLightSource/fastcs-standa-mirror"
 [[project.authors]] # Further authors may be added by duplicating this section
 email = "thomas.kane@diamond.ac.uk"
 name = "Tom Kane"
+
+[tool.uv]
+# Minimum uv to fix eMudhra CA cert incident (see discuss.python.org/t/109576)
+required-version = ">=0.13.5"
 
 [tool.setuptools_scm]
 version_file = "src/fastcs_standa_mirror/_version.py"
