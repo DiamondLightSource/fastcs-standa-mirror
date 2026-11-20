@@ -1,6 +1,6 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
-FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:noble AS developer
+FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:resolute AS developer
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
@@ -22,29 +22,6 @@ ENV UV_PYTHON_INSTALL_DIR=/python
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --no-dev --managed-python
-
-
-FROM build AS debug
-
-
-# Set origin to use ssh
-RUN git remote set-url origin git@github.com:DiamondLightSource/fastcs-standa-mirror.git
-
-
-# For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
-RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
-
-# Make editable and debuggable
-RUN uv pip install debugpy
-RUN uv pip install -e .
-ENV PATH=/app/.venv/bin:$PATH
-
-# Alternate entrypoint to allow devcontainer to attach
-ENTRYPOINT [ "/bin/bash", "-c", "--" ]
-CMD [ "while true; do sleep 30; done;" ]
-
 
 # The runtime stage copies the built venv into a runtime container
 FROM ubuntu:resolute AS runtime
