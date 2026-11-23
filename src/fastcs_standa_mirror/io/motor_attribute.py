@@ -4,7 +4,7 @@ from dataclasses import KW_ONLY, dataclass
 from typing import TypeVar
 
 import libximc.highlevel as ximc
-from fastcs.attributes import AttributeIO, AttributeIORef, AttrR
+from fastcs.attributes import AttributeIO, AttributeIORef, AttrR, AttrW
 
 NumberT = TypeVar("NumberT", int, float)
 
@@ -30,6 +30,10 @@ class MotorAttributeIO(AttributeIO[NumberT, MotorAttributeIORef]):
             position = self._master.motor.get_position()
             await attr.update(position.Position)
 
+        elif attr.io_ref.name == "speed":
+            move_settings = self._master.motor.get_move_settings()
+            await attr.update(move_settings.Speed)
+
         elif attr.io_ref.name == "saved":
             await attr.update(await self._master.get_saved_position())
 
@@ -37,3 +41,13 @@ class MotorAttributeIO(AttributeIO[NumberT, MotorAttributeIORef]):
             status = self._master.motor.get_status()
             is_moving = bool(status.MvCmdSts & ximc.MvcmdStatus.MVCMD_RUNNING)
             await attr.update(is_moving)
+
+    async def send(
+        self, attr: AttrW[NumberT, MotorAttributeIORef], value: NumberT
+    ) -> None:
+        """Change mirror attribute"""
+
+        if attr.io_ref.name == "speed":
+            move_settings = self._master.motor.get_move_settings()
+            move_settings.Speed = int(value)
+            self._master.motor.set_move_settings(move_settings)
